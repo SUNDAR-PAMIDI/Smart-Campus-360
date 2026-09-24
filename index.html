@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+<title>Smart Campus 360 | Raghu Engineering College</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<!-- ========================================================= -->
+<!-- AUTH SCREEN (LOGIN / CREATE ACCOUNT)                       -->
+<!-- ========================================================= -->
+<div id="authScreen" class="auth-screen">
+  <div class="auth-card">
+    <div class="auth-brand">
+      <i class="fa-solid fa-graduation-cap"></i>
+      <h1>SMART CAMPUS 360</h1>
+      <p>Raghu Engineering College, Visakhapatnam</p>
+    </div>
+
+    <!-- LOGIN FORM -->
+    <form id="loginForm" class="auth-form" novalidate>
+      <h2>Login</h2>
+      <div class="form-group">
+        <label for="loginEmail">Email</label>
+        <input type="email" id="loginEmail" placeholder="you@example.com" required autocomplete="email">
+      </div>
+      <div class="form-group">
+        <label for="loginPassword">Password</label>
+        <input type="password" id="loginPassword" placeholder="Enter password" required autocomplete="current-password">
+      </div>
+      <p class="form-error" id="loginError" aria-live="polite"></p>
+      <button type="submit" class="btn btn-primary btn-block">
+        <i class="fa-solid fa-right-to-bracket"></i> Login
+      </button>
+      <p class="auth-switch">
+        Don't have an account?
+        <button type="button" class="link-btn" id="showSignupBtn">Create Account</button>
+      </p>
+      <p class="auth-note"><i class="fa-solid fa-circle-info"></i> Demo authentication — data is stored only in your browser's local storage.</p>
+    </form>
+
+    <!-- SIGNUP FORM -->
+    <form id="signupForm" class="auth-form hidden" novalidate>
+      <h2>Create Account</h2>
+      <div class="form-group">
+        <label for="signupName">Full Name</label>
+        <input type="text" id="signupName" placeholder="Your full name" required autocomplete="name">
+      </div>
+      <div class="form-group">
+        <label for="signupEmail">Email</label>
+        <input type="email" id="signupEmail" placeholder="you@example.com" required autocomplete="email">
+      </div>
+      <div class="form-group">
+        <label for="signupStudentId">Student ID</label>
+        <input type="text" id="signupStudentId" placeholder="e.g. 22B91A4201" required>
+      </div>
+      <div class="form-group">
+        <label for="signupPassword">Password</label>
+        <input type="password" id="signupPassword" placeholder="Create password" required autocomplete="new-password">
+      </div>
+      <div class="form-group">
+        <label for="signupConfirmPassword">Confirm Password</label>
+        <input type="password" id="signupConfirmPassword" placeholder="Confirm password" required autocomplete="new-password">
+      </div>
+      <p class="form-error" id="signupError" aria-live="polite"></p>
+      <button type="submit" class="btn btn-primary btn-block">
+        <i class="fa-solid fa-user-plus"></i> Create Account
+      </button>
+      <p class="auth-switch">
+        Already have an account?
+        <button type="button" class="link-btn" id="showLoginBtn">Login</button>
+      </p>
+    </form>
+  </div>
+</div>
+
+<!-- ========================================================= -->
+<!-- MAIN APP (hidden until logged in)                          -->
+<!-- ========================================================= -->
+<div id="appRoot" class="app-root hidden">
+
+  <!-- Mobile top bar -->
+  <header class="mobile-topbar">
+    <button id="hamburgerBtn" class="hamburger-btn" aria-label="Open navigation menu" aria-expanded="false">
+      <span></span><span></span><span></span>
+    </button>
+    <div class="mobile-brand">
+      <i class="fa-solid fa-graduation-cap"></i> Smart Campus 360
+    </div>
+    <div class="mobile-avatar" id="mobileAvatarBtn" aria-label="Profile">
+      <i class="fa-solid fa-user"></i>
+    </div>
+  </header>
+
+  <!-- Sidebar / mobile nav drawer -->
+  <nav id="sideNav" class="side-nav" aria-label="Main navigation">
+    <div class="side-nav-brand">
+      <i class="fa-solid fa-graduation-cap"></i>
+      <div>
+        <strong>SMART CAMPUS 360</strong>
+        <span>Raghu Engineering College</span>
+      </div>
+    </div>
+
+    <ul class="nav-list">
+      <li><button class="nav-link active" data-section="dashboard"><i class="fa-solid fa-table-columns"></i> Dashboard</button></li>
+      <li><button class="nav-link" data-section="attendance"><i class="fa-solid fa-calendar-check"></i> Attendance</button></li>
+      <li><button class="nav-link" data-section="timetable"><i class="fa-solid fa-clock"></i> Timetable</button></li>
+      <li><button class="nav-link" data-section="assignments"><i class="fa-solid fa-file-pen"></i> Assignments</button></li>
+      <li><button class="nav-link" data-section="notices"><i class="fa-solid fa-bullhorn"></i> Notices</button></li>
+      <li><button class="nav-link" data-section="campus-map"><i class="fa-solid fa-map-location-dot"></i> Campus Map</button></li>
+      <li><button class="nav-link" data-section="bus-routes"><i class="fa-solid fa-bus"></i> Bus Routes</button></li>
+      <li><button class="nav-link" data-section="scholarships"><i class="fa-solid fa-award"></i> Scholarships</button></li>
+      <li><button class="nav-link" data-section="placement"><i class="fa-solid fa-briefcase"></i> Placement Hub</button></li>
+      <li><button class="nav-link" data-section="settings"><i class="fa-solid fa-gear"></i> Settings</button></li>
+    </ul>
+
+    <button id="logoutBtn" class="nav-logout">
+      <i class="fa-solid fa-right-from-bracket"></i> Logout
+    </button>
+  </nav>
+
+  <!-- Backdrop for mobile nav -->
+  <div id="navBackdrop" class="nav-backdrop hidden"></div>
+
+  <!-- Main content -->
+  <main class="main-content">
+
+    <!-- Top profile bar (desktop) -->
+    <div class="top-profile-bar">
+      <div class="page-title" id="pageTitle">Dashboard</div>
+      <div class="profile-chip">
+        <div class="avatar-circle"><i class="fa-solid fa-user"></i></div>
+        <div class="profile-chip-text">
+          <strong id="topProfileName">Student</strong>
+          <span id="topProfileMeta">CSE (AI & ML)</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===================== DASHBOARD ===================== -->
+    <section id="dashboard" class="page-section">
+      <div class="welcome-banner">
+        <div>
+          <h2 id="welcomeMsg">Welcome back, Sundar!</h2>
+          <p>Here is your academic snapshot for today.</p>
+        </div>
+        <i class="fa-solid fa-graduation-cap welcome-icon"></i>
+      </div>
+
+      <div class="info-card">
+        <h3><i class="fa-solid fa-id-card"></i> Student Information</h3>
+        <div class="info-grid">
+          <div><span>Name</span><strong>Pamidi Hemasundar</strong></div>
+          <div><span>College</span><strong>Raghu Engineering College</strong></div>
+          <div><span>Branch</span><strong>CSE (AI & ML)</strong></div>
+          <div><span>Year</span><strong>3rd Year</strong></div>
+          <div><span>CGPA</span><strong>8.2</strong></div>
+        </div>
+      </div>
+
+      <div class="card-grid">
+        <div class="stat-card" data-goto="attendance">
+          <i class="fa-solid fa-calendar-check icon-blue"></i>
+          <div><span>Overall Attendance</span><strong id="dashAttendance">--%</strong></div>
+        </div>
+        <div class="stat-card" data-goto="assignments">
+          <i class="fa-solid fa-file-pen icon-orange"></i>
+          <div><span>Pending Assignments</span><strong id="dashAssignments">--</strong></div>
+        </div>
+        <div class="stat-card" data-goto="notices">
+          <i class="fa-solid fa-bullhorn icon-red"></i>
+          <div><span>New Notices</span><strong id="dashNotices">--</strong></div>
+        </div>
+        <div class="stat-card" data-goto="placement">
+          <i class="fa-solid fa-briefcase icon-green"></i>
+          <div><span>Placement Readiness</span><strong>63%</strong></div>
+        </div>
+        <div class="stat-card" data-goto="settings">
+          <i class="fa-solid fa-chart-line icon-purple"></i>
+          <div><span>CGPA</span><strong>8.2</strong></div>
+        </div>
+        <div class="stat-card" data-goto="timetable">
+          <i class="fa-solid fa-clock icon-teal"></i>
+          <div><span>Upcoming Classes</span><strong>Check Timetable</strong></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================== ATTENDANCE ===================== -->
+    <section id="attendance" class="page-section hidden">
+      <h2 class="section-heading"><i class="fa-solid fa-calendar-check"></i> Attendance</h2>
+      <div class="table-wrap">
+        <table class="data-table" id="attendanceTable">
+          <thead>
+            <tr>
+              <th>Subject</th>
+              <th>Code</th>
+              <th>Present</th>
+              <th>Total</th>
+              <th>Percentage</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody id="attendanceTbody"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ===================== TIMETABLE ===================== -->
+    <section id="timetable" class="page-section hidden">
+      <h2 class="section-heading"><i class="fa-solid fa-clock"></i> III-II CSE(AI&ML) — Section-wise Timetable</h2>
+      <div class="section-tabs" id="timetableTabs"></div>
+      <div class="table-wrap">
+        <table class="data-table" id="timetableTable">
+          <thead>
+            <tr><th>Day</th><th>1</th><th>2</th><th>3</th><th>4</th><th>5</th><th>6</th></tr>
+          </thead>
+          <tbody id="timetableTbody"></tbody>
+        </table>
+      </div>
+      <div class="timetable-meta" id="timetableMeta"></div>
+    </section>
+
+    <!-- ===================== ASSIGNMENTS ===================== -->
+    <section id="assignments" class="page-section hidden">
+      <h2 class="section-heading"><i class="fa-solid fa-file-pen"></i> Assignments</h2>
+      <div class="card-grid" id="assignmentsGrid"></div>
+    </section>
+
+    <!-- ===================== NOTICES ===================== -->
+    <section id="notices" class="page-section hidden">
+      <h2 class="section-heading"><i class="fa-solid fa-bullhorn"></i> Notices</h2>
+      <div class="notice-list" id="noticesList"></div>
+    </section>
+
+    <!-- ===================== CAMPUS MAP ===================== -->
+    <section id="campus-map" class="page-section hidden">
+      <h2 class="section-heading"><i class="fa-solid fa-map-location-dot"></i> Campus Map</h2>
+      <div class="map-grid">
+        <div class="map-card">
+          <h3>College Campus</h3>
+          <div class="map-img-wrap">
+            <img src="college.jpg" alt="Raghu Engineering College Campus" loading="lazy" onerror="this.closest('.map-img-wrap').innerHTML='<div class=\'img-fallback\'><i class=\'fa-solid fa-image\'></i><span>college.jpg not found in assets/</span></div>'">
+          </div>
+        </div>
+        <div class="map-card">
+          <h3>Master Plan</h3>
+          <div class="map-img-wrap">
+            <img src="master plan.jpg" alt="Campus Master Plan" loading="lazy" onerror="this.closest('.map-img-wrap').innerHTML='<div class=\'img-fallback\'><i class=\'fa-solid fa-image\'></i><span>master plan.jpg not found in assets/</span></div>'">
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================== BUS ROUTES ===================== -->
+    <section id="bus-routes" class="page-section hidden">
+      <h2 class="section-heading"><i class="fa-solid fa-bus"></i> Bus Routes</h2>
+      <div class="card-grid" id="busRoutesGrid"></div>
+    </section>
+
+    <!-- ===================== SCHOLARSHIPS ===================== -->
+    <section id="scholarships" class="page-section hidden">
+      <h2 class="section-heading"><i class="fa-solid fa-award"></i> Scholarships</h2>
+      <div class="card-grid" id="scholarshipsGrid"></div>
+    </section>
+
+    <!-- ===================== PLACEMENT HUB ===================== -->
+    <section id="placement" class="page-section hidden">
+      <h2 class="section-heading"><i class="fa-solid fa-briefcase"></i> Placement Hub</h2>
+
+      <div class="info-card">
+        <h3>Placement Readiness</h3>
+        <div class="progress-bar-wrap">
+          <div class="progress-bar-fill" style="width:63%">63%</div>
+        </div>
+      </div>
+
+      <div class="card-grid">
+        <div class="prep-card"><i class="fa-solid fa-brain"></i><h4>Aptitude Preparation</h4><p>Quantitative, logical & verbal ability practice sets.</p></div>
+        <div class="prep-card"><i class="fa-solid fa-code"></i><h4>Coding Preparation</h4><p>DSA, problem solving & mock coding rounds.</p></div>
+        <div class="prep-card"><i class="fa-solid fa-comments"></i><h4>Communication Preparation</h4><p>Group discussions & spoken English practice.</p></div>
+        <div class="prep-card"><i class="fa-solid fa-file-lines"></i><h4>Resume Preparation</h4><p>ATS-friendly resume building guidance.</p></div>
+        <div class="prep-card"><i class="fa-solid fa-people-arrows"></i><h4>Interview Preparation</h4><p>HR & technical mock interview sessions.</p></div>
+      </div>
+
+      <div class="download-row">
+        <button class="btn btn-outline" data-download="Aptitude Study PDF"><i class="fa-solid fa-download"></i> Download Aptitude Study PDF</button>
+        <button class="btn btn-outline" data-download="Coding Study PDF"><i class="fa-solid fa-download"></i> Download Coding Study PDF</button>
+        <button class="btn btn-outline" data-download="Communication Study PDF"><i class="fa-solid fa-download"></i> Download Communication Study PDF</button>
+      </div>
+
+      <h3 class="sub-heading">Sample Placement Drives</h3>
+      <div class="table-wrap">
+        <table class="data-table" id="placementDrivesTable">
+          <thead><tr><th>Company</th><th>Role</th><th>Eligibility</th><th>Status</th></tr></thead>
+          <tbody id="placementDrivesTbody"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ===================== SETTINGS ===================== -->
+    <section id="settings" class="page-section hidden">
+      <h2 class="section-heading"><i class="fa-solid fa-gear"></i> Settings</h2>
+      <div class="info-card">
+        <h3>Profile</h3>
+        <form id="settingsForm" class="settings-form" novalidate>
+          <div class="form-group">
+            <label for="setName">Name</label>
+            <input type="text" id="setName">
+          </div>
+          <div class="form-group">
+            <label for="setEmail">Email</label>
+            <input type="email" id="setEmail">
+          </div>
+          <div class="form-group">
+            <label for="setStudentId">Student ID</label>
+            <input type="text" id="setStudentId">
+          </div>
+          <div class="form-group">
+            <label for="setBranch">Branch</label>
+            <input type="text" id="setBranch">
+          </div>
+          <div class="form-group">
+            <label for="setYear">Year</label>
+            <input type="text" id="setYear">
+          </div>
+          <div class="form-group">
+            <label for="setCgpa">CGPA</label>
+            <input type="text" id="setCgpa">
+          </div>
+          <p class="form-success" id="settingsSuccess" aria-live="polite"></p>
+          <div class="settings-btn-row">
+            <button type="submit" class="btn btn-primary"><i class="fa-solid fa-floppy-disk"></i> Save Profile</button>
+            <button type="button" id="resetProfileBtn" class="btn btn-outline"><i class="fa-solid fa-rotate-left"></i> Reset Profile</button>
+            <button type="button" id="settingsLogoutBtn" class="btn btn-danger"><i class="fa-solid fa-right-from-bracket"></i> Logout</button>
+          </div>
+        </form>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<!-- ========================================================= -->
+<!-- GENERIC MODAL                                               -->
+<!-- ========================================================= -->
+<div id="genericModal" class="modal-overlay hidden">
+  <div class="modal-box" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+    <button class="modal-close" id="modalCloseBtn" aria-label="Close">&times;</button>
+    <div class="modal-icon" id="modalIcon"><i class="fa-solid fa-circle-check"></i></div>
+    <h3 id="modalTitle">Title</h3>
+    <p id="modalBody">Body text</p>
+    <button class="btn btn-primary btn-block" id="modalOkBtn">OK</button>
+  </div>
+</div>
+
+<script src="script.js"></script>
+</body>
+</html>
