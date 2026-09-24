@@ -14,14 +14,23 @@ function on(el, event, handler) {
 }
 function show(el) { if (el) el.classList.remove("hidden"); }
 function hide(el) { if (el) el.classList.add("hidden"); }
+function escapeHtml(str) {
+  if (str === null || str === undefined) return "";
+  return String(str)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
 
 /* =========================================================
-   LOCAL STORAGE KEYS
+   LOCAL STORAGE KEYS — ALL DATA KEYED PER-USER (BY EMAIL)
    ========================================================= */
-const LS_ACCOUNT = "smartCampusAccount";
-const LS_LOGGED_IN = "smartCampusLoggedIn";
-const LS_PROFILE = "smartCampusProfile";
-const LS_ASSIGNMENTS = "smartCampusAssignments";
+const LS_ACCOUNTS = "smartCampusAccounts";        // { "email@x.com": {name,email,studentId,password} }
+const LS_PROFILES = "smartCampusProfiles";        // { "email@x.com": {name,email,studentId,branch,year,cgpa} }
+const LS_ASSIGNMENTS = "smartCampusAssignmentsByUser"; // { "email@x.com": { a1:true, a2:false, ... } }
+const LS_CURRENT_USER = "smartCampusCurrentUser"; // "email@x.com" or null
 
 function lsGet(key, fallback) {
   try {
@@ -43,18 +52,47 @@ function lsSet(key, value) {
   }
 }
 
-/* =========================================================
-   APPLICATION STATE / STATIC DATA
-   ========================================================= */
-const DEFAULT_PROFILE = {
-  name: "Pamidi Hemasundar",
-  email: "hemasundarpamidi@gmail.com",
-  studentId: "N/A",
-  branch: "CSE (AI & ML)",
-  year: "3rd Year",
-  cgpa: "8.2"
-};
+/* ---- Accounts (email -> account) ---- */
+function getAllAccounts() { return lsGet(LS_ACCOUNTS, {}); }
+function saveAllAccounts(map) { lsSet(LS_ACCOUNTS, map); }
+function getAccountByEmail(email) {
+  const all = getAllAccounts();
+  return all[email] || null;
+}
 
+/* ---- Profiles (email -> profile) ---- */
+function getAllProfiles() { return lsGet(LS_PROFILES, {}); }
+function saveAllProfiles(map) { lsSet(LS_PROFILES, map); }
+function getProfileByEmail(email) {
+  const all = getAllProfiles();
+  return all[email] || null;
+}
+function saveProfileForEmail(email, profile) {
+  const all = getAllProfiles();
+  all[email] = profile;
+  saveAllProfiles(all);
+}
+
+/* ---- Assignments (email -> {id:true}) ---- */
+function getAllAssignmentsMap() { return lsGet(LS_ASSIGNMENTS, {}); }
+function getAssignmentsForEmail(email) {
+  const all = getAllAssignmentsMap();
+  return all[email] || {};
+}
+function saveAssignmentsForEmail(email, submittedMap) {
+  const all = getAllAssignmentsMap();
+  all[email] = submittedMap;
+  lsSet(LS_ASSIGNMENTS, all);
+}
+
+/* ---- Current logged-in user ---- */
+function getCurrentUserEmail() { return lsGet(LS_CURRENT_USER, null); }
+function setCurrentUserEmail(email) { lsSet(LS_CURRENT_USER, email); }
+function clearCurrentUserEmail() { lsSet(LS_CURRENT_USER, null); }
+
+/* =========================================================
+   STATIC DATA (shared across all users — college-wide info)
+   ========================================================= */
 const ATTENDANCE_DATA = [
   { subject: "Data Structures", code: "CS301", present: 52, total: 60 },
   { subject: "Database Management", code: "CS302", present: 48, total: 55 },
@@ -75,11 +113,10 @@ const SUBJECT_POOL = ["DS", "DBMS", "OS", "CN", "SE", "ML", "AI Lab", "Mentoring
 const DAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 
 function buildTimetableGrid(sectionName) {
-  // Deterministic pseudo-schedule per section so it looks stable across reloads
   let seed = 0;
   for (let i = 0; i < sectionName.length; i++) seed += sectionName.charCodeAt(i);
   const grid = [];
-  DAYS.forEach((day, dIdx) => {
+  DAYS.forEach(function (day, dIdx) {
     const row = [day];
     for (let period = 0; period < 6; period++) {
       const idx = (seed + dIdx * 3 + period * 2) % SUBJECT_POOL.length;
@@ -140,24 +177,14 @@ const PLACEMENT_DRIVES_SEED = [
 /* =========================================================
    AUTHENTICATION
    ========================================================= */
-function getAccount() {
-  return lsGet(LS_ACCOUNT, null);
-}
-function saveAccount(account) {
-  lsSet(LS_ACCOUNT, account);
-}
-function isLoggedIn() {
-  return lsGet(LS_LOGGED_IN, false) === true;
-}
-function setLoggedIn(value) {
-  lsSet(LS_LOGGED_IN, value);
-}
-
 function handleSignup(e) {
   e.preventDefault();
   const nameEl = $("#signupName");
   const emailEl = $("#signupEmail");
   const idEl = $("#signupStudentId");
+  const branchEl = $("#signupBranch");
+  const yearEl = $("#signupYear");
+  const cgpaEl = $("#signupCgpa");
   const passEl = $("#signupPassword");
   const confirmEl = $("#signupConfirmPassword");
   const errorEl = $("#signupError");
@@ -166,13 +193,16 @@ function handleSignup(e) {
   const name = nameEl.value.trim();
   const email = emailEl.value.trim().toLowerCase();
   const studentId = idEl.value.trim();
+  const branch = (branchEl && branchEl.value.trim()) || "CSE (AI & ML)";
+  const year = (yearEl && yearEl.value.trim()) || "3rd Year";
+  const cgpa = (cgpaEl && cgpaEl.value.trim()) || "--";
   const password = passEl.value;
   const confirm = confirmEl.value;
 
   if (errorEl) errorEl.textContent = "";
 
   if (!name || !email || !studentId || !password || !confirm) {
-    if (errorEl) errorEl.textContent = "Please fill in all fields.";
+    if (errorEl) errorEl.textContent = "Please fill in all required fields.";
     return;
   }
   if (password.length < 4) {
@@ -184,18 +214,28 @@ function handleSignup(e) {
     return;
   }
 
-  const account = { name: name, email: email, studentId: studentId, password: password };
-  saveAccount(account);
+  const accounts = getAllAccounts();
+  if (accounts[email]) {
+    if (errorEl) errorEl.textContent = "An account with this email already exists. Please login instead.";
+    return;
+  }
 
-  // Initialize profile from signup data, merging defaults for academic fields
-  const profile = Object.assign({}, DEFAULT_PROFILE, {
+  // Save the new account under its OWN email key — never overwrites anyone else's account
+  accounts[email] = { name: name, email: email, studentId: studentId, password: password };
+  saveAllAccounts(accounts);
+
+  // Save a profile scoped ONLY to this email
+  const profile = {
     name: name,
     email: email,
-    studentId: studentId
-  });
-  lsSet(LS_PROFILE, profile);
+    studentId: studentId,
+    branch: branch,
+    year: year,
+    cgpa: cgpa
+  };
+  saveProfileForEmail(email, profile);
 
-  openModal("success", "Account Created", "Your account has been created successfully. You can now log in.", function () {
+  openModal("success", "Account Created", "Your account has been created successfully. You can now log in with your own email and password.", function () {
     closeModal();
     showLoginForm();
     const loginEmail = $("#loginEmail");
@@ -216,28 +256,32 @@ function handleLogin(e) {
   const password = passEl.value;
   if (errorEl) errorEl.textContent = "";
 
-  const account = getAccount();
+  const account = getAccountByEmail(email);
   if (!account) {
-    if (errorEl) errorEl.textContent = "No account found. Please create an account first.";
+    if (errorEl) errorEl.textContent = "No account found with this email. Please create an account first.";
     return;
   }
-  if (account.email !== email || account.password !== password) {
+  if (account.password !== password) {
     if (errorEl) errorEl.textContent = "Invalid email or password.";
     return;
   }
 
-  setLoggedIn(true);
+  // This is the key fix: we remember WHICH email is logged in
+  setCurrentUserEmail(email);
   enterApp();
 }
 
 function handleLogout() {
-  setLoggedIn(false);
+  clearCurrentUserEmail();
   const appRoot = $("#appRoot");
   const authScreen = $("#authScreen");
   hide(appRoot);
   show(authScreen);
   showLoginForm();
   closeNavDrawer();
+
+  const loginForm = $("#loginForm");
+  if (loginForm) loginForm.reset();
 }
 
 function showLoginForm() {
@@ -285,11 +329,10 @@ function goToSection(sectionId) {
 
   closeNavDrawer();
 
-  window.scrollTo({ top: 0, behavior: "smooth" });
   try {
     target.scrollIntoView({ behavior: "smooth", block: "start" });
   } catch (err) {
-    // scrollIntoView with options unsupported in some old browsers; fail silently
+    window.scrollTo(0, 0);
   }
 }
 
@@ -355,7 +398,7 @@ function initMobileMenu() {
 }
 
 /* =========================================================
-   DASHBOARD
+   DASHBOARD — always renders the CURRENT logged-in user's data
    ========================================================= */
 function computeOverallAttendance() {
   let totalPresent = 0;
@@ -368,15 +411,15 @@ function computeOverallAttendance() {
   return Math.round((totalPresent / totalClasses) * 1000) / 10;
 }
 
-function renderDashboard() {
+function renderDashboard(profile) {
   const attendanceEl = $("#dashAttendance");
   if (attendanceEl) attendanceEl.textContent = computeOverallAttendance() + "%";
 
-  const assignments = lsGet(LS_ASSIGNMENTS, {});
+  const email = getCurrentUserEmail();
+  const submitted = email ? getAssignmentsForEmail(email) : {};
   let pendingCount = 0;
   ASSIGNMENTS_SEED.forEach(function (a) {
-    const submitted = assignments[a.id] === true;
-    if (!submitted) pendingCount++;
+    if (submitted[a.id] !== true) pendingCount++;
   });
   const assignmentsEl = $("#dashAssignments");
   if (assignmentsEl) assignmentsEl.textContent = String(pendingCount);
@@ -384,12 +427,14 @@ function renderDashboard() {
   const noticesEl = $("#dashNotices");
   if (noticesEl) noticesEl.textContent = String(NOTICES_SEED.length);
 
-  const profile = lsGet(LS_PROFILE, DEFAULT_PROFILE);
   const welcomeMsg = $("#welcomeMsg");
   if (welcomeMsg) {
-    const firstName = (profile.name || "Sundar").split(" ")[0];
+    const firstName = ((profile && profile.name) || "Student").split(" ")[0];
     welcomeMsg.textContent = "Welcome back, " + firstName + "!";
   }
+
+  const dashCgpaEl = $("#dashCgpa");
+  if (dashCgpaEl) dashCgpaEl.textContent = (profile && profile.cgpa) || "--";
 }
 
 /* =========================================================
@@ -470,14 +515,15 @@ function renderTimetable() {
 }
 
 /* =========================================================
-   ASSIGNMENTS
+   ASSIGNMENTS — submitted state stored per logged-in user
    ========================================================= */
 function renderAssignments() {
   const grid = $("#assignmentsGrid");
   if (!grid) return;
   grid.innerHTML = "";
 
-  const submittedMap = lsGet(LS_ASSIGNMENTS, {});
+  const email = getCurrentUserEmail();
+  const submittedMap = email ? getAssignmentsForEmail(email) : {};
 
   ASSIGNMENTS_SEED.forEach(function (a) {
     const isSubmitted = submittedMap[a.id] === true;
@@ -508,11 +554,14 @@ function renderAssignments() {
 }
 
 function submitAssignment(id) {
-  const submittedMap = lsGet(LS_ASSIGNMENTS, {});
+  const email = getCurrentUserEmail();
+  if (!email) return;
+  const submittedMap = getAssignmentsForEmail(email);
   submittedMap[id] = true;
-  lsSet(LS_ASSIGNMENTS, submittedMap);
+  saveAssignmentsForEmail(email, submittedMap);
   renderAssignments();
-  renderDashboard();
+  const profile = getProfileByEmail(email);
+  renderDashboard(profile);
   openModal("success", "Assignment Submitted", "Your assignment has been marked as submitted successfully.", closeModal);
 }
 
@@ -619,10 +668,9 @@ function renderPlacement() {
 }
 
 /* =========================================================
-   SETTINGS
+   SETTINGS — edits ONLY the current user's own profile
    ========================================================= */
-function renderSettings() {
-  const profile = lsGet(LS_PROFILE, DEFAULT_PROFILE);
+function renderSettings(profile) {
   setInputValue("#setName", profile.name);
   setInputValue("#setEmail", profile.email);
   setInputValue("#setStudentId", profile.studentId);
@@ -635,19 +683,27 @@ function setInputValue(selector, value) {
   const el = $(selector);
   if (el) el.value = value || "";
 }
+function getInputValue(selector) {
+  const el = $(selector);
+  return el ? el.value.trim() : "";
+}
 
 function handleSettingsSave(e) {
   e.preventDefault();
+  const email = getCurrentUserEmail();
+  if (!email) return;
+
+  const existing = getProfileByEmail(email) || {};
   const profile = {
-    name: getInputValue("#setName") || DEFAULT_PROFILE.name,
-    email: getInputValue("#setEmail") || DEFAULT_PROFILE.email,
-    studentId: getInputValue("#setStudentId") || DEFAULT_PROFILE.studentId,
-    branch: getInputValue("#setBranch") || DEFAULT_PROFILE.branch,
-    year: getInputValue("#setYear") || DEFAULT_PROFILE.year,
-    cgpa: getInputValue("#setCgpa") || DEFAULT_PROFILE.cgpa
+    name: getInputValue("#setName") || existing.name,
+    email: email, // email is fixed to the logged-in account, never editable here
+    studentId: getInputValue("#setStudentId") || existing.studentId,
+    branch: getInputValue("#setBranch") || existing.branch,
+    year: getInputValue("#setYear") || existing.year,
+    cgpa: getInputValue("#setCgpa") || existing.cgpa
   };
-  lsSet(LS_PROFILE, profile);
-  updateProfileDisplays(profile);
+  saveProfileForEmail(email, profile);
+  applyProfileEverywhere(profile);
 
   const successEl = $("#settingsSuccess");
   if (successEl) {
@@ -656,15 +712,24 @@ function handleSettingsSave(e) {
   }
 }
 
-function getInputValue(selector) {
-  const el = $(selector);
-  return el ? el.value.trim() : "";
-}
-
 function handleResetProfile() {
-  lsSet(LS_PROFILE, DEFAULT_PROFILE);
-  renderSettings();
-  updateProfileDisplays(DEFAULT_PROFILE);
+  const email = getCurrentUserEmail();
+  if (!email) return;
+  const account = getAccountByEmail(email);
+  if (!account) return;
+
+  const freshProfile = {
+    name: account.name,
+    email: account.email,
+    studentId: account.studentId,
+    branch: "CSE (AI & ML)",
+    year: "3rd Year",
+    cgpa: "--"
+  };
+  saveProfileForEmail(email, freshProfile);
+  renderSettings(freshProfile);
+  applyProfileEverywhere(freshProfile);
+
   const successEl = $("#settingsSuccess");
   if (successEl) {
     successEl.textContent = "Profile reset to default.";
@@ -672,17 +737,23 @@ function handleResetProfile() {
   }
 }
 
-function updateProfileDisplays(profile) {
+/* Applies one user's profile to every part of the UI that shows profile info */
+function applyProfileEverywhere(profile) {
   const nameEl = $("#topProfileName");
   const metaEl = $("#topProfileMeta");
-  if (nameEl) nameEl.textContent = profile.name || DEFAULT_PROFILE.name;
-  if (metaEl) metaEl.textContent = (profile.branch || DEFAULT_PROFILE.branch) + " · " + (profile.year || DEFAULT_PROFILE.year);
+  if (nameEl) nameEl.textContent = profile.name || "Student";
+  if (metaEl) metaEl.textContent = (profile.branch || "") + " · " + (profile.year || "");
 
-  const welcomeMsg = $("#welcomeMsg");
-  if (welcomeMsg) {
-    const firstName = (profile.name || "Sundar").split(" ")[0];
-    welcomeMsg.textContent = "Welcome back, " + firstName + "!";
-  }
+  const infoName = $("#infoName");
+  const infoBranch = $("#infoBranch");
+  const infoYear = $("#infoYear");
+  const infoCgpa = $("#infoCgpa");
+  if (infoName) infoName.textContent = profile.name || "Student";
+  if (infoBranch) infoBranch.textContent = profile.branch || "--";
+  if (infoYear) infoYear.textContent = profile.year || "--";
+  if (infoCgpa) infoCgpa.textContent = profile.cgpa || "--";
+
+  renderDashboard(profile);
 }
 
 /* =========================================================
@@ -739,29 +810,39 @@ function initModals() {
 }
 
 /* =========================================================
-   UTIL
-   ========================================================= */
-function escapeHtml(str) {
-  if (str === null || str === undefined) return "";
-  return String(str)
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#039;");
-}
-
-/* =========================================================
-   APP ENTRY
+   APP ENTRY — loads and displays ONLY the logged-in user's data
    ========================================================= */
 function enterApp() {
+  const email = getCurrentUserEmail();
+  if (!email) {
+    // Safety net: no valid session, bounce back to login instead of a blank/wrong screen
+    handleLogout();
+    return;
+  }
+
+  const account = getAccountByEmail(email);
+  if (!account) {
+    handleLogout();
+    return;
+  }
+
+  let profile = getProfileByEmail(email);
+  if (!profile) {
+    profile = {
+      name: account.name,
+      email: account.email,
+      studentId: account.studentId,
+      branch: "CSE (AI & ML)",
+      year: "3rd Year",
+      cgpa: "--"
+    };
+    saveProfileForEmail(email, profile);
+  }
+
   hide($("#authScreen"));
   show($("#appRoot"));
 
-  const profile = lsGet(LS_PROFILE, DEFAULT_PROFILE);
-  updateProfileDisplays(profile);
-
-  renderDashboard();
+  applyProfileEverywhere(profile);
   renderAttendance();
   renderTimetable();
   renderAssignments();
@@ -769,7 +850,7 @@ function enterApp() {
   renderBusRoutes();
   renderScholarships();
   renderPlacement();
-  renderSettings();
+  renderSettings(profile);
 
   goToSection("dashboard");
 }
@@ -796,15 +877,16 @@ function initApp() {
     initModals();
     initAppListeners();
 
-    if (isLoggedIn() && getAccount()) {
+    const currentEmail = getCurrentUserEmail();
+    if (currentEmail && getAccountByEmail(currentEmail)) {
       enterApp();
     } else {
+      clearCurrentUserEmail();
       show($("#authScreen"));
       hide($("#appRoot"));
       showLoginForm();
     }
   } catch (err) {
-    // Defensive: never let a single failure produce a blank screen.
     console.error("Smart Campus 360 initialization error:", err);
     const authScreen = $("#authScreen");
     if (authScreen) show(authScreen);

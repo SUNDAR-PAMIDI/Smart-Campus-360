@@ -39,7 +39,7 @@
         Don't have an account?
         <button type="button" class="link-btn" id="showSignupBtn">Create Account</button>
       </p>
-      <p class="auth-note"><i class="fa-solid fa-circle-info"></i> Demo authentication — data is stored only in your browser's local storage.</p>
+      <p class="auth-note"><i class="fa-solid fa-circle-info"></i> Demo authentication — each account's data is stored only in your browser's local storage, separately per email.</p>
     </form>
 
     <!-- SIGNUP FORM -->
@@ -56,6 +56,18 @@
       <div class="form-group">
         <label for="signupStudentId">Student ID</label>
         <input type="text" id="signupStudentId" placeholder="e.g. 22B91A4201" required>
+      </div>
+      <div class="form-group">
+        <label for="signupBranch">Branch</label>
+        <input type="text" id="signupBranch" placeholder="e.g. CSE (AI & ML)" required>
+      </div>
+      <div class="form-group">
+        <label for="signupYear">Year</label>
+        <input type="text" id="signupYear" placeholder="e.g. 3rd Year" required>
+      </div>
+      <div class="form-group">
+        <label for="signupCgpa">CGPA</label>
+        <input type="text" id="signupCgpa" placeholder="e.g. 8.2" required>
       </div>
       <div class="form-group">
         <label for="signupPassword">Password</label>
@@ -145,7 +157,7 @@
     <section id="dashboard" class="page-section">
       <div class="welcome-banner">
         <div>
-          <h2 id="welcomeMsg">Welcome back, Sundar!</h2>
+          <h2 id="welcomeMsg">Welcome back!</h2>
           <p>Here is your academic snapshot for today.</p>
         </div>
         <i class="fa-solid fa-graduation-cap welcome-icon"></i>
@@ -154,11 +166,11 @@
       <div class="info-card">
         <h3><i class="fa-solid fa-id-card"></i> Student Information</h3>
         <div class="info-grid">
-          <div><span>Name</span><strong>Pamidi Hemasundar</strong></div>
+          <div><span>Name</span><strong id="infoName">Student</strong></div>
           <div><span>College</span><strong>Raghu Engineering College</strong></div>
-          <div><span>Branch</span><strong>CSE (AI & ML)</strong></div>
-          <div><span>Year</span><strong>3rd Year</strong></div>
-          <div><span>CGPA</span><strong>8.2</strong></div>
+          <div><span>Branch</span><strong id="infoBranch">CSE (AI &amp; ML)</strong></div>
+          <div><span>Year</span><strong id="infoYear">3rd Year</strong></div>
+          <div><span>CGPA</span><strong id="infoCgpa">--</strong></div>
         </div>
       </div>
 
@@ -181,7 +193,7 @@
         </div>
         <div class="stat-card" data-goto="settings">
           <i class="fa-solid fa-chart-line icon-purple"></i>
-          <div><span>CGPA</span><strong>8.2</strong></div>
+          <div><span>CGPA</span><strong id="dashCgpa">--</strong></div>
         </div>
         <div class="stat-card" data-goto="timetable">
           <i class="fa-solid fa-clock icon-teal"></i>
@@ -244,13 +256,13 @@
         <div class="map-card">
           <h3>College Campus</h3>
           <div class="map-img-wrap">
-            <img src="college.jpg" alt="Raghu Engineering College Campus" loading="lazy" onerror="this.closest('.map-img-wrap').innerHTML='<div class=\'img-fallback\'><i class=\'fa-solid fa-image\'></i><span>college.jpg not found in assets/</span></div>'">
+            <img src="assets/college.jpg" alt="Raghu Engineering College Campus" loading="lazy" onerror="this.closest('.map-img-wrap').innerHTML='<div class=\'img-fallback\'><i class=\'fa-solid fa-image\'></i><span>college.jpg not found in assets/</span></div>'">
           </div>
         </div>
         <div class="map-card">
           <h3>Master Plan</h3>
           <div class="map-img-wrap">
-            <img src="master plan.jpg" alt="Campus Master Plan" loading="lazy" onerror="this.closest('.map-img-wrap').innerHTML='<div class=\'img-fallback\'><i class=\'fa-solid fa-image\'></i><span>master plan.jpg not found in assets/</span></div>'">
+            <img src="assets/master plan.jpg" alt="Campus Master Plan" loading="lazy" onerror="this.closest('.map-img-wrap').innerHTML='<div class=\'img-fallback\'><i class=\'fa-solid fa-image\'></i><span>master plan.jpg not found in assets/</span></div>'">
           </div>
         </div>
       </div>
@@ -280,11 +292,11 @@
       </div>
 
       <div class="card-grid">
-        <div class="prep-card"><i class="fa-solid fa-brain"></i><h4>Aptitude Preparation</h4><p>Quantitative, logical & verbal ability practice sets.</p></div>
-        <div class="prep-card"><i class="fa-solid fa-code"></i><h4>Coding Preparation</h4><p>DSA, problem solving & mock coding rounds.</p></div>
-        <div class="prep-card"><i class="fa-solid fa-comments"></i><h4>Communication Preparation</h4><p>Group discussions & spoken English practice.</p></div>
+        <div class="prep-card"><i class="fa-solid fa-brain"></i><h4>Aptitude Preparation</h4><p>Quantitative, logical &amp; verbal ability practice sets.</p></div>
+        <div class="prep-card"><i class="fa-solid fa-code"></i><h4>Coding Preparation</h4><p>DSA, problem solving &amp; mock coding rounds.</p></div>
+        <div class="prep-card"><i class="fa-solid fa-comments"></i><h4>Communication Preparation</h4><p>Group discussions &amp; spoken English practice.</p></div>
         <div class="prep-card"><i class="fa-solid fa-file-lines"></i><h4>Resume Preparation</h4><p>ATS-friendly resume building guidance.</p></div>
-        <div class="prep-card"><i class="fa-solid fa-people-arrows"></i><h4>Interview Preparation</h4><p>HR & technical mock interview sessions.</p></div>
+        <div class="prep-card"><i class="fa-solid fa-people-arrows"></i><h4>Interview Preparation</h4><p>HR &amp; technical mock interview sessions.</p></div>
       </div>
 
       <div class="download-row">
@@ -314,7 +326,7 @@
           </div>
           <div class="form-group">
             <label for="setEmail">Email</label>
-            <input type="email" id="setEmail">
+            <input type="email" id="setEmail" disabled>
           </div>
           <div class="form-group">
             <label for="setStudentId">Student ID</label>
