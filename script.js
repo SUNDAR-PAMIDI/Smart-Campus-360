@@ -1,24 +1,23 @@
-
 "use strict";
- 
+
 /* ---------- Helpers ---------- */
- 
+
 function $(selector, scope = document) {
   return scope.querySelector(selector);
 }
- 
+
 function $all(selector, scope = document) {
   return Array.from(scope.querySelectorAll(selector));
 }
- 
+
 function show(el) {
   el.classList.remove("hidden");
 }
- 
+
 function hide(el) {
   el.classList.add("hidden");
 }
- 
+
 function escapeHtml(str) {
   return String(str ?? "")
     .replace(/&/g, "&amp;")
@@ -27,15 +26,14 @@ function escapeHtml(str) {
     .replace(/"/g, "&quot;")
     .replace(/'/g, "&#039;");
 }
- 
-/* ---------- Local storage ----------
-   Everything is stored per user, keyed by email. */
- 
+
+/* ---------- Local storage (per user, keyed by email) ---------- */
+
 const LS_ACCOUNTS = "smartCampusAccounts";
 const LS_PROFILES = "smartCampusProfiles";
 const LS_ASSIGNMENTS = "smartCampusAssignmentsByUser";
 const LS_CURRENT_USER = "smartCampusCurrentUser";
- 
+
 function loadData(key, fallback) {
   try {
     const raw = localStorage.getItem(key);
@@ -45,7 +43,7 @@ function loadData(key, fallback) {
     return fallback;
   }
 }
- 
+
 function saveData(key, value) {
   try {
     localStorage.setItem(key, JSON.stringify(value));
@@ -53,47 +51,51 @@ function saveData(key, value) {
     console.warn("Could not save", key, err);
   }
 }
- 
+
 function getAccount(email) {
+  if (!email) return null;
   return loadData(LS_ACCOUNTS, {})[email] || null;
 }
- 
+
 function getProfile(email) {
+  if (!email) return null;
   return loadData(LS_PROFILES, {})[email] || null;
 }
- 
+
 function saveProfile(email, profile) {
   const profiles = loadData(LS_PROFILES, {});
   profiles[email] = profile;
   saveData(LS_PROFILES, profiles);
 }
- 
+
 function getSubmittedAssignments(email) {
+  if (!email) return {};
   return loadData(LS_ASSIGNMENTS, {})[email] || {};
 }
- 
+
 function saveSubmittedAssignments(email, submitted) {
   const all = loadData(LS_ASSIGNMENTS, {});
   all[email] = submitted;
   saveData(LS_ASSIGNMENTS, all);
 }
- 
+
 function getCurrentUser() {
   return loadData(LS_CURRENT_USER, null);
 }
- 
+
 function setCurrentUser(email) {
   saveData(LS_CURRENT_USER, email);
 }
- 
+
 function clearCurrentUser() {
   localStorage.removeItem(LS_CURRENT_USER);
 }
- 
+
 /* ---------- Static college data ---------- */
- 
+
 const DEFAULT_PROFILE = { branch: "CSE (AI & ML)", year: "3rd Year", cgpa: "--" };
- 
+const PLACEMENT_READINESS = 63; // percent, shown on dashboard and Placement Hub
+
 const ATTENDANCE_DATA = [
   { subject: "Data Structures", code: "CS301", present: 52, total: 60 },
   { subject: "Database Management", code: "CS302", present: 48, total: 55 },
@@ -101,7 +103,7 @@ const ATTENDANCE_DATA = [
   { subject: "Computer Networks", code: "CS304", present: 40, total: 45 },
   { subject: "Software Engineering", code: "CS305", present: 36, total: 40 }
 ];
- 
+
 const TIMETABLE_SECTIONS = {
   "Section A": { room: "LAB14", mentor: "NH Kavitha" },
   "Section B": { room: "LAB15", mentor: "Dr Srinivas" },
@@ -109,10 +111,10 @@ const TIMETABLE_SECTIONS = {
   "Section D": { room: "LH-11", mentor: "Mrs Sirlekha" },
   "Section E": { room: "LAB-13 / LH-13", mentor: "Mr L Sankar" }
 };
- 
+
 const SUBJECT_POOL = ["DS", "DBMS", "OS", "CN", "SE", "ML", "AI Lab", "Mentoring"];
 const DAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
- 
+
 const ASSIGNMENTS = [
   { id: "a1", subject: "Data Structures", title: "Balanced Binary Tree Implementation", due: "2026-10-02", desc: "Implement AVL tree insertion, deletion and rotation logic in a language of your choice." },
   { id: "a2", subject: "Database Management", title: "Normalization Case Study", due: "2026-10-05", desc: "Normalize the given college database schema up to 3NF with justification." },
@@ -121,7 +123,7 @@ const ASSIGNMENTS = [
   { id: "a5", subject: "Software Engineering", title: "SRS Document", due: "2026-10-10", desc: "Prepare a complete Software Requirements Specification for Smart Campus 360." },
   { id: "a6", subject: "Machine Learning", title: "Linear Regression Mini Project", due: "2026-10-12", desc: "Build and evaluate a linear regression model on a chosen dataset with metrics." }
 ];
- 
+
 const NOTICES = [
   { title: "1-1 Supplementary Examinations Schedule Released", date: "2026-09-20", category: "Examinations", desc: "1-1 supplementary examination timetable has been released. Students must check hall tickets on the portal." },
   { title: "1-2 Supplementary Examinations Notification", date: "2026-09-18", category: "Examinations", desc: "Applications for 1-2 supplementary examinations are now open. Last date to apply is given in the circular." },
@@ -134,7 +136,7 @@ const NOTICES = [
   { title: "Placement Drive — Infosys", date: "2026-09-14", category: "Placements", desc: "Infosys placement drive eligibility list has been published. Eligible students must confirm participation." },
   { title: "College Annual Tech Fest — Registrations Open", date: "2026-09-12", category: "Announcements", desc: "Registrations are now open for the annual technical fest with coding, robotics and paper presentation events." }
 ];
- 
+
 const BUS_ROUTES = [
   { no: "R1", name: "MVP Colony Route", start: "MVP Colony", stops: "Siripuram, Dwaraka Nagar, NAD Junction", timing: "7:15 AM / 4:30 PM", status: "Active" },
   { no: "R2", name: "Gajuwaka Route", start: "Gajuwaka", stops: "Kancharapalem, Aganampudi, Duvvada", timing: "7:00 AM / 4:30 PM", status: "Active" },
@@ -143,7 +145,7 @@ const BUS_ROUTES = [
   { no: "R5", name: "Vizianagaram Route", start: "Vizianagaram Bus Stand", stops: "Gajapathinagaram, Kothavalasa", timing: "6:30 AM / 4:30 PM", status: "Active" },
   { no: "R6", name: "Bheemili Route", start: "Bheemunipatnam", stops: "Sontyam, Anandapuram", timing: "7:05 AM / 4:30 PM", status: "Delayed Today" }
 ];
- 
+
 const SCHOLARSHIPS = [
   { name: "Merit Scholarship", eligibility: "CGPA 8.5 and above, no backlogs", info: "Awarded to top academic performers each semester based on SGPA/CGPA ranking.", status: "Applications Open" },
   { name: "Government Scholarship (AP)", eligibility: "Family income below prescribed limit", info: "State government scholarship for eligible SC/ST/BC/EWS category students.", status: "Applications Open" },
@@ -151,7 +153,7 @@ const SCHOLARSHIPS = [
   { name: "EAPCET Rank Scholarship", eligibility: "EAPCET rank holders under fee reimbursement scheme", info: "Fee reimbursement opportunity linked to EAPCET counseling allotment.", status: "Applications Open" },
   { name: "Raghu Engineering College Merit Award", eligibility: "Top 3 rank holders per branch per year", info: "Institution-specific cash award and certificate for outstanding academic performance.", status: "Applications Open" }
 ];
- 
+
 const PLACEMENT_DRIVES = [
   { company: "TCS", role: "Assistant System Engineer", eligibility: "CGPA 6.5+, No active backlogs", status: "Open" },
   { company: "Infosys", role: "Systems Engineer", eligibility: "CGPA 7.0+, No active backlogs", status: "Open" },
@@ -159,22 +161,22 @@ const PLACEMENT_DRIVES = [
   { company: "Cognizant", role: "Programmer Analyst", eligibility: "CGPA 6.5+, No active backlogs", status: "Upcoming" },
   { company: "Amazon", role: "SDE Intern", eligibility: "CGPA 8.0+, Strong DSA skills", status: "Upcoming" }
 ];
- 
+
 /* ---------- Auth ---------- */
- 
+
 function showLoginForm() {
   show($("#loginForm"));
   hide($("#signupForm"));
 }
- 
+
 function showSignupForm() {
   hide($("#loginForm"));
   show($("#signupForm"));
 }
- 
+
 function handleSignup(e) {
   e.preventDefault();
- 
+
   const name = $("#signupName").value.trim();
   const email = $("#signupEmail").value.trim().toLowerCase();
   const studentId = $("#signupStudentId").value.trim();
@@ -184,11 +186,15 @@ function handleSignup(e) {
   const password = $("#signupPassword").value;
   const confirmPassword = $("#signupConfirmPassword").value;
   const errorEl = $("#signupError");
- 
+
   errorEl.textContent = "";
- 
+
   if (!name || !email || !studentId || !password || !confirmPassword) {
     errorEl.textContent = "Please fill in all required fields.";
+    return;
+  }
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    errorEl.textContent = "Please enter a valid email address.";
     return;
   }
   if (password.length < 4) {
@@ -199,17 +205,17 @@ function handleSignup(e) {
     errorEl.textContent = "Passwords do not match.";
     return;
   }
- 
+
   const accounts = loadData(LS_ACCOUNTS, {});
   if (accounts[email]) {
     errorEl.textContent = "An account with this email already exists. Please login instead.";
     return;
   }
- 
+
   accounts[email] = { name, email, studentId, password };
   saveData(LS_ACCOUNTS, accounts);
   saveProfile(email, { name, email, studentId, branch, year, cgpa });
- 
+
   openModal(
     "success",
     "Account Created",
@@ -222,16 +228,16 @@ function handleSignup(e) {
     }
   );
 }
- 
+
 function handleLogin(e) {
   e.preventDefault();
- 
+
   const email = $("#loginEmail").value.trim().toLowerCase();
   const password = $("#loginPassword").value;
   const errorEl = $("#loginError");
- 
+
   errorEl.textContent = "";
- 
+
   const account = getAccount(email);
   if (!account) {
     errorEl.textContent = "No account found with this email. Please create an account first.";
@@ -241,11 +247,11 @@ function handleLogin(e) {
     errorEl.textContent = "Invalid email or password.";
     return;
   }
- 
+
   setCurrentUser(email);
   enterApp();
 }
- 
+
 function handleLogout() {
   clearCurrentUser();
   hide($("#appRoot"));
@@ -254,9 +260,9 @@ function handleLogout() {
   closeNavDrawer();
   $("#loginForm").reset();
 }
- 
+
 /* ---------- Navigation ---------- */
- 
+
 const SECTION_TITLES = {
   "dashboard": "Dashboard",
   "attendance": "Attendance",
@@ -269,38 +275,38 @@ const SECTION_TITLES = {
   "placement": "Placement Hub",
   "settings": "Settings"
 };
- 
+
 function goToSection(sectionId) {
   const target = $("#" + sectionId);
   if (!target) return;
- 
+
   $all(".page-section").forEach(hide);
   show(target);
- 
+
   $all(".nav-link").forEach(function (link) {
     link.classList.toggle("active", link.dataset.section === sectionId);
   });
- 
+
   $("#pageTitle").textContent = SECTION_TITLES[sectionId] || "Dashboard";
- 
+
   closeNavDrawer();
-  target.scrollIntoView({ behavior: "smooth", block: "start" });
+  window.scrollTo({ top: 0, behavior: "smooth" });
 }
- 
+
 function openNavDrawer() {
   $("#sideNav").classList.add("open");
   show($("#navBackdrop"));
   $("#hamburgerBtn").classList.add("active");
   $("#hamburgerBtn").setAttribute("aria-expanded", "true");
 }
- 
+
 function closeNavDrawer() {
   $("#sideNav").classList.remove("open");
   hide($("#navBackdrop"));
   $("#hamburgerBtn").classList.remove("active");
   $("#hamburgerBtn").setAttribute("aria-expanded", "false");
 }
- 
+
 function toggleNavDrawer() {
   if ($("#sideNav").classList.contains("open")) {
     closeNavDrawer();
@@ -308,44 +314,45 @@ function toggleNavDrawer() {
     openNavDrawer();
   }
 }
- 
+
 /* ---------- Dashboard ---------- */
- 
+
 function calcPercentage(present, total) {
   return total > 0 ? Math.round((present / total) * 1000) / 10 : 0;
 }
- 
+
 function getOverallAttendance() {
   const present = ATTENDANCE_DATA.reduce((sum, row) => sum + row.present, 0);
   const total = ATTENDANCE_DATA.reduce((sum, row) => sum + row.total, 0);
   return calcPercentage(present, total);
 }
- 
+
 function renderDashboard(profile) {
   const email = getCurrentUser();
-  const submitted = email ? getSubmittedAssignments(email) : {};
+  const submitted = getSubmittedAssignments(email);
   const pendingCount = ASSIGNMENTS.filter(a => submitted[a.id] !== true).length;
   const firstName = ((profile && profile.name) || "Student").split(" ")[0];
- 
+
   $("#dashAttendance").textContent = getOverallAttendance() + "%";
   $("#dashAssignments").textContent = pendingCount;
   $("#dashNotices").textContent = NOTICES.length;
   $("#dashCgpa").textContent = (profile && profile.cgpa) || "--";
+  $("#dashPlacement").textContent = PLACEMENT_READINESS + "%";
   $("#welcomeMsg").textContent = "Welcome back, " + firstName + "!";
 }
- 
+
 /* ---------- Attendance ---------- */
- 
+
 function getAttendanceStatus(percentage) {
   if (percentage >= 75) return { label: "Good", cls: "status-good" };
   if (percentage >= 65) return { label: "Warning", cls: "status-warn" };
   return { label: "Shortage", cls: "status-bad" };
 }
- 
+
 function renderAttendance() {
   const tbody = $("#attendanceTbody");
   tbody.innerHTML = "";
- 
+
   ATTENDANCE_DATA.forEach(function (row) {
     const percentage = calcPercentage(row.present, row.total);
     const status = getAttendanceStatus(percentage);
@@ -360,32 +367,33 @@ function renderAttendance() {
     tbody.appendChild(tr);
   });
 }
- 
+
 /* ---------- Timetable ---------- */
- 
+
 let currentSection = "Section A";
- 
-// There is no real timetable data yet, so each section gets a repeatable
-// pattern generated from its name.
+
+// No real timetable data yet, so each section gets a repeatable pattern
+// generated from its name. Replace with a hard-coded grid when you have real data.
 function buildTimetableGrid(sectionName) {
   let seed = 0;
   for (let i = 0; i < sectionName.length; i++) {
     seed += sectionName.charCodeAt(i);
   }
- 
+
   return DAYS.map(function (day, dayIndex) {
     const row = [day];
     for (let period = 0; period < 6; period++) {
-      row.push(SUBJECT_POOL[(seed + dayIndex * 3 + period * 2) % SUBJECT_POOL.length]);
+      // step of 1 so periods in a day don't repeat (pool has 8 subjects, 6 periods)
+      row.push(SUBJECT_POOL[(seed + dayIndex * 3 + period) % SUBJECT_POOL.length]);
     }
     return row;
   });
 }
- 
+
 function renderTimetableTabs() {
   const tabs = $("#timetableTabs");
   tabs.innerHTML = "";
- 
+
   Object.keys(TIMETABLE_SECTIONS).forEach(function (sectionName) {
     const btn = document.createElement("button");
     btn.type = "button";
@@ -398,37 +406,47 @@ function renderTimetableTabs() {
     tabs.appendChild(btn);
   });
 }
- 
+
 function renderTimetableTable() {
   const tbody = $("#timetableTbody");
   tbody.innerHTML = "";
- 
+
   buildTimetableGrid(currentSection).forEach(function (row) {
     const tr = document.createElement("tr");
     tr.innerHTML = row.map(cell => `<td>${escapeHtml(cell)}</td>`).join("");
     tbody.appendChild(tr);
   });
- 
+
   const info = TIMETABLE_SECTIONS[currentSection];
   $("#timetableMeta").innerHTML =
     `<strong>${escapeHtml(currentSection)}</strong> &nbsp;|&nbsp; Room: ${escapeHtml(info.room)}` +
     ` &nbsp;|&nbsp; Mentor: ${escapeHtml(info.mentor)}`;
 }
- 
+
 function renderTimetable() {
   renderTimetableTabs();
   renderTimetableTable();
 }
- 
+
 /* ---------- Assignments ---------- */
- 
+
+function isOverdue(dueDate) {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  return new Date(dueDate + "T00:00:00") < today;
+}
+
 function renderAssignments() {
   const grid = $("#assignmentsGrid");
   const submitted = getSubmittedAssignments(getCurrentUser());
   grid.innerHTML = "";
- 
+
   ASSIGNMENTS.forEach(function (a) {
     const isSubmitted = submitted[a.id] === true;
+    const overdue = !isSubmitted && isOverdue(a.due);
+    const pillClass = isSubmitted ? "status-submitted" : overdue ? "status-bad" : "status-pending";
+    const pillText = isSubmitted ? "Submitted" : overdue ? "Overdue" : "Pending";
+
     const card = document.createElement("div");
     card.className = "assignment-card";
     card.innerHTML = `
@@ -437,9 +455,7 @@ function renderAssignments() {
       <p class="assignment-desc">${escapeHtml(a.desc)}</p>
       <p class="assignment-due"><i class="fa-regular fa-calendar"></i> Due: ${escapeHtml(a.due)}</p>
       <div class="assignment-footer">
-        <span class="status-pill ${isSubmitted ? "status-submitted" : "status-pending"}">
-          ${isSubmitted ? "Submitted" : "Pending"}
-        </span>
+        <span class="status-pill ${pillClass}">${pillText}</span>
         <button class="btn btn-primary" data-assignment-id="${a.id}" ${isSubmitted ? "disabled" : ""}>
           ${isSubmitted
             ? '<i class="fa-solid fa-check"></i> Done'
@@ -449,26 +465,26 @@ function renderAssignments() {
     grid.appendChild(card);
   });
 }
- 
+
 function submitAssignment(id) {
   const email = getCurrentUser();
   if (!email) return;
- 
+
   const submitted = getSubmittedAssignments(email);
   submitted[id] = true;
   saveSubmittedAssignments(email, submitted);
- 
+
   renderAssignments();
   renderDashboard(getProfile(email));
   openModal("success", "Assignment Submitted", "Your assignment has been marked as submitted successfully.");
 }
- 
+
 /* ---------- Notices ---------- */
- 
+
 function renderNotices() {
   const list = $("#noticesList");
   list.innerHTML = "";
- 
+
   NOTICES.forEach(function (n) {
     const card = document.createElement("div");
     card.className = "notice-card";
@@ -482,9 +498,9 @@ function renderNotices() {
     list.appendChild(card);
   });
 }
- 
+
 /* ---------- Campus map ---------- */
- 
+
 function initMapImageFallbacks() {
   $all(".map-img-wrap img").forEach(function (img) {
     img.addEventListener("error", function () {
@@ -494,13 +510,13 @@ function initMapImageFallbacks() {
     });
   });
 }
- 
+
 /* ---------- Bus routes ---------- */
- 
+
 function renderBusRoutes() {
   const grid = $("#busRoutesGrid");
   grid.innerHTML = "";
- 
+
   BUS_ROUTES.forEach(function (r) {
     const card = document.createElement("div");
     card.className = "bus-card";
@@ -513,13 +529,13 @@ function renderBusRoutes() {
     grid.appendChild(card);
   });
 }
- 
+
 /* ---------- Scholarships ---------- */
- 
+
 function renderScholarships() {
   const grid = $("#scholarshipsGrid");
   grid.innerHTML = "";
- 
+
   SCHOLARSHIPS.forEach(function (s, index) {
     const statusClass = s.status.includes("Open") ? "status-open" : "status-closed";
     const card = document.createElement("div");
@@ -535,7 +551,7 @@ function renderScholarships() {
     grid.appendChild(card);
   });
 }
- 
+
 function showScholarshipDetails(index) {
   const s = SCHOLARSHIPS[index];
   if (!s) return;
@@ -545,18 +561,24 @@ function showScholarshipDetails(index) {
     `${s.eligibility}. ${s.info} This is a demo informational card — please contact the college scholarship office for the actual application process.`
   );
 }
- 
+
 /* ---------- Placement hub ---------- */
- 
+
+function renderPlacementReadiness() {
+  const bar = $("#placementBar");
+  bar.style.width = PLACEMENT_READINESS + "%";
+  bar.textContent = PLACEMENT_READINESS + "%";
+}
+
 function renderPlacementDrives() {
   const tbody = $("#placementDrivesTbody");
   tbody.innerHTML = "";
- 
+
   PLACEMENT_DRIVES.forEach(function (d) {
     let statusClass = "status-closed";
     if (d.status === "Open") statusClass = "status-open";
     else if (d.status === "Upcoming") statusClass = "status-warn";
- 
+
     const tr = document.createElement("tr");
     tr.innerHTML = `
       <td>${escapeHtml(d.company)}</td>
@@ -566,9 +588,9 @@ function renderPlacementDrives() {
     tbody.appendChild(tr);
   });
 }
- 
+
 /* ---------- Settings ---------- */
- 
+
 function fillSettingsForm(profile) {
   $("#setName").value = profile.name || "";
   $("#setEmail").value = profile.email || "";
@@ -577,7 +599,7 @@ function fillSettingsForm(profile) {
   $("#setYear").value = profile.year || "";
   $("#setCgpa").value = profile.cgpa || "";
 }
- 
+
 function showSettingsMessage(message) {
   const el = $("#settingsSuccess");
   el.textContent = message;
@@ -585,12 +607,12 @@ function showSettingsMessage(message) {
     el.textContent = "";
   }, 2500);
 }
- 
+
 function handleSettingsSave(e) {
   e.preventDefault();
   const email = getCurrentUser();
   if (!email) return;
- 
+
   // Blank fields keep the old value
   const old = getProfile(email) || {};
   const profile = {
@@ -601,24 +623,25 @@ function handleSettingsSave(e) {
     year: $("#setYear").value.trim() || old.year,
     cgpa: $("#setCgpa").value.trim() || old.cgpa
   };
- 
+
   saveProfile(email, profile);
+  fillSettingsForm(profile);
   applyProfile(profile);
   showSettingsMessage("Profile saved successfully.");
 }
- 
+
 function handleResetProfile() {
   const email = getCurrentUser();
   const account = getAccount(email);
   if (!account) return;
- 
+
   const profile = createDefaultProfile(account);
   saveProfile(email, profile);
   fillSettingsForm(profile);
   applyProfile(profile);
   showSettingsMessage("Profile reset to default.");
 }
- 
+
 function createDefaultProfile(account) {
   return {
     name: account.name,
@@ -627,7 +650,7 @@ function createDefaultProfile(account) {
     ...DEFAULT_PROFILE
   };
 }
- 
+
 // Updates every place on the page that shows profile info
 function applyProfile(profile) {
   $("#topProfileName").textContent = profile.name || "Student";
@@ -636,55 +659,55 @@ function applyProfile(profile) {
   $("#infoBranch").textContent = profile.branch || "--";
   $("#infoYear").textContent = profile.year || "--";
   $("#infoCgpa").textContent = profile.cgpa || "--";
- 
+
   renderDashboard(profile);
 }
- 
+
 /* ---------- Modal ---------- */
- 
+
 let modalOnOk = null;
- 
+
 function openModal(type, title, body, onOk) {
   const icons = {
     success: "fa-circle-check",
     error: "fa-circle-exclamation",
     info: "fa-circle-info"
   };
- 
+
   $("#modalTitle").textContent = title;
   $("#modalBody").textContent = body;
   $("#modalIcon").innerHTML = `<i class="fa-solid ${icons[type] || icons.info}"></i>`;
- 
+
   modalOnOk = onOk || closeModal;
   show($("#genericModal"));
 }
- 
+
 function closeModal() {
   hide($("#genericModal"));
   modalOnOk = null;
 }
- 
+
 /* ---------- App start ---------- */
- 
+
 function enterApp() {
   const email = getCurrentUser();
-  const account = email && getAccount(email);
- 
+  const account = getAccount(email);
+
   // No valid session, go back to the login screen
   if (!account) {
     handleLogout();
     return;
   }
- 
+
   let profile = getProfile(email);
   if (!profile) {
     profile = createDefaultProfile(account);
     saveProfile(email, profile);
   }
- 
+
   hide($("#authScreen"));
   show($("#appRoot"));
- 
+
   applyProfile(profile);
   renderAttendance();
   renderTimetable();
@@ -692,19 +715,20 @@ function enterApp() {
   renderNotices();
   renderBusRoutes();
   renderScholarships();
+  renderPlacementReadiness();
   renderPlacementDrives();
   fillSettingsForm(profile);
- 
+
   goToSection("dashboard");
 }
- 
+
 function initEventListeners() {
   // auth
   $("#loginForm").addEventListener("submit", handleLogin);
   $("#signupForm").addEventListener("submit", handleSignup);
   $("#showSignupBtn").addEventListener("click", showSignupForm);
   $("#showLoginBtn").addEventListener("click", showLoginForm);
- 
+
   // sidebar and dashboard shortcuts
   $all(".nav-link").forEach(function (link) {
     link.addEventListener("click", () => goToSection(link.dataset.section));
@@ -712,28 +736,28 @@ function initEventListeners() {
   $all("[data-goto]").forEach(function (card) {
     card.addEventListener("click", () => goToSection(card.dataset.goto));
   });
- 
+
   // mobile menu
   $("#hamburgerBtn").addEventListener("click", toggleNavDrawer);
   $("#navBackdrop").addEventListener("click", closeNavDrawer);
   $("#mobileAvatarBtn").addEventListener("click", () => goToSection("settings"));
- 
+
   // logout and settings
   $("#logoutBtn").addEventListener("click", handleLogout);
   $("#settingsLogoutBtn").addEventListener("click", handleLogout);
   $("#settingsForm").addEventListener("submit", handleSettingsSave);
   $("#resetProfileBtn").addEventListener("click", handleResetProfile);
- 
+
   // buttons inside cards that get re-rendered
   $("#assignmentsGrid").addEventListener("click", function (e) {
     const btn = e.target.closest("[data-assignment-id]");
-    if (btn) submitAssignment(btn.dataset.assignmentId);
+    if (btn && !btn.disabled) submitAssignment(btn.dataset.assignmentId);
   });
   $("#scholarshipsGrid").addEventListener("click", function (e) {
     const btn = e.target.closest("[data-scholarship-idx]");
     if (btn) showScholarshipDetails(parseInt(btn.dataset.scholarshipIdx, 10));
   });
- 
+
   // placement downloads (demo only)
   $all("[data-download]").forEach(function (btn) {
     btn.addEventListener("click", function () {
@@ -744,7 +768,7 @@ function initEventListeners() {
       );
     });
   });
- 
+
   // modal
   $("#modalCloseBtn").addEventListener("click", closeModal);
   $("#modalOkBtn").addEventListener("click", function () {
@@ -757,11 +781,11 @@ function initEventListeners() {
     if (e.key === "Escape") closeModal();
   });
 }
- 
+
 function initApp() {
   initEventListeners();
   initMapImageFallbacks();
- 
+
   const email = getCurrentUser();
   if (email && getAccount(email)) {
     enterApp();
@@ -772,6 +796,5 @@ function initApp() {
     showLoginForm();
   }
 }
- 
+
 document.addEventListener("DOMContentLoaded", initApp);
- 
