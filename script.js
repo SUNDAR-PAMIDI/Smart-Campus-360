@@ -32,6 +32,7 @@ function escapeHtml(str) {
 const LS_ACCOUNTS = "smartCampusAccounts";
 const LS_PROFILES = "smartCampusProfiles";
 const LS_ASSIGNMENTS = "smartCampusAssignmentsByUser";
+const LS_UPLOADS = "smartCampusUploadsByUser";
 const LS_CURRENT_USER = "smartCampusCurrentUser";
 
 function loadData(key, fallback) {
@@ -44,11 +45,14 @@ function loadData(key, fallback) {
   }
 }
 
+// Returns true if saved, false if the browser blocked it
 function saveData(key, value) {
   try {
     localStorage.setItem(key, JSON.stringify(value));
+    return true;
   } catch (err) {
     console.warn("Could not save", key, err);
+    return false;
   }
 }
 
@@ -79,6 +83,17 @@ function saveSubmittedAssignments(email, submitted) {
   saveData(LS_ASSIGNMENTS, all);
 }
 
+function getUploads(email) {
+  if (!email) return {};
+  return loadData(LS_UPLOADS, {})[email] || {};
+}
+
+function saveUploads(email, uploads) {
+  const all = loadData(LS_UPLOADS, {});
+  all[email] = uploads;
+  saveData(LS_UPLOADS, all);
+}
+
 function getCurrentUser() {
   return loadData(LS_CURRENT_USER, null);
 }
@@ -88,7 +103,11 @@ function setCurrentUser(email) {
 }
 
 function clearCurrentUser() {
-  localStorage.removeItem(LS_CURRENT_USER);
+  try {
+    localStorage.removeItem(LS_CURRENT_USER);
+  } catch (err) {
+    console.warn("Could not clear current user", err);
+  }
 }
 
 /* ---------- Static college data ---------- */
@@ -213,7 +232,10 @@ function handleSignup(e) {
   }
 
   accounts[email] = { name, email, studentId, password };
-  saveData(LS_ACCOUNTS, accounts);
+  if (!saveData(LS_ACCOUNTS, accounts)) {
+    errorEl.textContent = "Could not save the account. Open the site through a local server (or http/https) and allow browser storage.";
+    return;
+  }
   saveProfile(email, { name, email, studentId, branch, year, cgpa });
 
   openModal(
@@ -223,8 +245,8 @@ function handleSignup(e) {
     function () {
       closeModal();
       showLoginForm();
-      $("#loginEmail").value = email;
       $("#signupForm").reset();
+      $("#loginEmail").value = email;
     }
   );
 }
@@ -428,7 +450,12 @@ function renderTimetable() {
   renderTimetableTable();
 }
 
-/* ---------- Assignments ---------- */
+/* ---------- Assignments (with file / folder upload) ---------- */
+
+// Files chosen but not submitted yet: { assignmentId: { files: [File], isFolder: bool } }
+// Kept in memory only, because browsers can't save real files in localStorage.
+const pendingUploads = {};
+const MAX_UPLOAD_MB = 50;
 
 function isOverdue(dueDate) {
   const today = new Date();
@@ -436,9 +463,51 @@ function isOverdue(dueDate) {
   return new Date(dueDate + "T00:00:00") < today;
 }
 
+// Short text for what was uploaded, e.g. "report.pdf" or "Folder: Project (12 files)"
+function describeUpload(pending) {
+  if (pending.isFolder) {
+    const rel = pending.files[0].webkitRelativePath || "";
+    const folderName = rel.split("/")[0] || "Selected folder";
+    return "Folder: " + folderName + " (" + pending.files.length + " files)";
+  }
+  return pending.files.map(f => f.name).join(", ");
+}
+
+function renderUploadBox(id) {
+  const pending = pendingUploads[id];
+  let listHtml = "";
+
+  if (pending) {
+    const shown = pending.isFolder
+      ? [describeUpload(pending)]
+      : pending.files.map(f => f.name);
+    listHtml = `<ul class="upload-list">` +
+      shown.map(name => `<li><i class="fa-solid ${pending.isFolder ? "fa-folder" : "fa-file"}"></i> ${escapeHtml(name)}</li>`).join("") +
+      `<li><button type="button" class="upload-clear" data-upload-clear="${id}">Remove</button></li></ul>`;
+  }
+
+  return `
+    <div class="upload-box">
+      <div class="upload-actions">
+        <label class="btn btn-outline upload-btn">
+          <i class="fa-solid fa-file-pdf"></i> Choose PDF / File
+          <input type="file" data-upload-file="${id}" accept=".pdf,.doc,.docx,.ppt,.pptx,.zip,.txt,.png,.jpg,.jpeg" multiple>
+        </label>
+        <label class="btn btn-outline upload-btn">
+          <i class="fa-solid fa-folder-open"></i> Choose Folder
+          <input type="file" data-upload-folder="${id}" webkitdirectory>
+        </label>
+      </div>
+      <p class="upload-hint">Upload a PDF, document or a whole folder (max ${MAX_UPLOAD_MB} MB).</p>
+      ${listHtml}
+    </div>`;
+}
+
 function renderAssignments() {
   const grid = $("#assignmentsGrid");
-  const submitted = getSubmittedAssignments(getCurrentUser());
+  const email = getCurrentUser();
+  const submitted = getSubmittedAssignments(email);
+  const uploads = getUploads(email);
   grid.innerHTML = "";
 
   ASSIGNMENTS.forEach(function (a) {
@@ -446,6 +515,17 @@ function renderAssignments() {
     const overdue = !isSubmitted && isOverdue(a.due);
     const pillClass = isSubmitted ? "status-submitted" : overdue ? "status-bad" : "status-pending";
     const pillText = isSubmitted ? "Submitted" : overdue ? "Overdue" : "Pending";
+    const hasPending = !!pendingUploads[a.id];
+
+    let uploadHtml = "";
+    if (isSubmitted) {
+      const up = uploads[a.id];
+      if (up) {
+        uploadHtml = `<div class="upload-summary"><i class="fa-solid fa-paperclip"></i> <span>${escapeHtml(up.label)}</span></div>`;
+      }
+    } else {
+      uploadHtml = renderUploadBox(a.id);
+    }
 
     const card = document.createElement("div");
     card.className = "assignment-card";
@@ -454,9 +534,10 @@ function renderAssignments() {
       <h4>${escapeHtml(a.title)}</h4>
       <p class="assignment-desc">${escapeHtml(a.desc)}</p>
       <p class="assignment-due"><i class="fa-regular fa-calendar"></i> Due: ${escapeHtml(a.due)}</p>
+      ${uploadHtml}
       <div class="assignment-footer">
         <span class="status-pill ${pillClass}">${pillText}</span>
-        <button class="btn btn-primary" data-assignment-id="${a.id}" ${isSubmitted ? "disabled" : ""}>
+        <button class="btn btn-primary" data-assignment-id="${a.id}" ${isSubmitted || !hasPending ? "disabled" : ""}>
           ${isSubmitted
             ? '<i class="fa-solid fa-check"></i> Done'
             : '<i class="fa-solid fa-paper-plane"></i> Submit'}
@@ -466,17 +547,47 @@ function renderAssignments() {
   });
 }
 
+// Called when a file or folder is picked
+function handleUploadPick(input) {
+  const id = input.dataset.uploadFile || input.dataset.uploadFolder;
+  const isFolder = input.dataset.uploadFolder !== undefined;
+  const files = Array.from(input.files);
+  if (!files.length) return;
+
+  const totalMb = files.reduce((sum, f) => sum + f.size, 0) / (1024 * 1024);
+  if (totalMb > MAX_UPLOAD_MB) {
+    openModal("error", "Upload Too Large", "Please choose files totalling less than " + MAX_UPLOAD_MB + " MB.");
+    return;
+  }
+
+  pendingUploads[id] = { files: files, isFolder: isFolder };
+  renderAssignments();
+}
+
 function submitAssignment(id) {
   const email = getCurrentUser();
   if (!email) return;
+
+  const pending = pendingUploads[id];
+  if (!pending) {
+    openModal("error", "No File Selected", "Please choose a PDF, file or folder before submitting.");
+    return;
+  }
+
+  // Only the file names are saved (browser storage can't hold the real files)
+  const uploads = getUploads(email);
+  uploads[id] = { label: describeUpload(pending), count: pending.files.length, at: new Date().toISOString() };
+  saveUploads(email, uploads);
 
   const submitted = getSubmittedAssignments(email);
   submitted[id] = true;
   saveSubmittedAssignments(email, submitted);
 
+  delete pendingUploads[id];
+
   renderAssignments();
   renderDashboard(getProfile(email));
-  openModal("success", "Assignment Submitted", "Your assignment has been marked as submitted successfully.");
+  openModal("success", "Assignment Submitted", "Your upload was received and the assignment is marked as submitted.");
 }
 
 /* ---------- Notices ---------- */
@@ -687,6 +798,16 @@ function closeModal() {
   modalOnOk = null;
 }
 
+/* ---------- Abstract popup (login page) ---------- */
+
+function openAbstract() {
+  show($("#abstractModal"));
+}
+
+function closeAbstract() {
+  hide($("#abstractModal"));
+}
+
 /* ---------- App start ---------- */
 
 function enterApp() {
@@ -729,6 +850,14 @@ function initEventListeners() {
   $("#showSignupBtn").addEventListener("click", showSignupForm);
   $("#showLoginBtn").addEventListener("click", showLoginForm);
 
+  // abstract popup
+  $("#abstractBtn").addEventListener("click", openAbstract);
+  $("#abstractCloseBtn").addEventListener("click", closeAbstract);
+  $("#abstractOkBtn").addEventListener("click", closeAbstract);
+  $("#abstractModal").addEventListener("click", function (e) {
+    if (e.target === this) closeAbstract();
+  });
+
   // sidebar and dashboard shortcuts
   $all(".nav-link").forEach(function (link) {
     link.addEventListener("click", () => goToSection(link.dataset.section));
@@ -750,8 +879,18 @@ function initEventListeners() {
 
   // buttons inside cards that get re-rendered
   $("#assignmentsGrid").addEventListener("click", function (e) {
+    const clearBtn = e.target.closest("[data-upload-clear]");
+    if (clearBtn) {
+      delete pendingUploads[clearBtn.dataset.uploadClear];
+      renderAssignments();
+      return;
+    }
     const btn = e.target.closest("[data-assignment-id]");
     if (btn && !btn.disabled) submitAssignment(btn.dataset.assignmentId);
+  });
+  $("#assignmentsGrid").addEventListener("change", function (e) {
+    const input = e.target.closest("[data-upload-file], [data-upload-folder]");
+    if (input) handleUploadPick(input);
   });
   $("#scholarshipsGrid").addEventListener("click", function (e) {
     const btn = e.target.closest("[data-scholarship-idx]");
@@ -778,7 +917,10 @@ function initEventListeners() {
     if (e.target === this) closeModal();
   });
   document.addEventListener("keydown", function (e) {
-    if (e.key === "Escape") closeModal();
+    if (e.key === "Escape") {
+      closeModal();
+      closeAbstract();
+    }
   });
 }
 

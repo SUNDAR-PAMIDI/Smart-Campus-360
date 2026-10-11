@@ -8,11 +8,19 @@
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 <link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="extras.css">
 </head>
 <body>
 
 <!-- Login / Create account -->
 <div id="authScreen" class="auth-screen">
+
+  <!-- floating background glows (decoration only) -->
+  <span class="auth-orb orb-1" aria-hidden="true"></span>
+  <span class="auth-orb orb-2" aria-hidden="true"></span>
+  <span class="auth-orb orb-3" aria-hidden="true"></span>
+
+  <!-- LEFT: login / signup -->
   <div class="auth-card">
     <div class="auth-brand">
       <i class="fa-solid fa-graduation-cap"></i>
@@ -39,6 +47,9 @@
         <button type="button" class="link-btn" id="showSignupBtn">Create Account</button>
       </p>
       <p class="auth-note"><i class="fa-solid fa-circle-info"></i> Demo authentication — each account's data is stored only in your browser's local storage, separately per email.</p>
+      <button type="button" class="btn btn-outline btn-block abstract-btn" id="abstractBtn">
+        <i class="fa-solid fa-file-lines"></i> Abstract
+      </button>
     </form>
 
     <form id="signupForm" class="auth-form hidden" novalidate>
@@ -85,6 +96,51 @@
       </p>
     </form>
   </div>
+
+  <!-- RIGHT: project details (text only, animated, transparent) -->
+  <aside class="info-panel" aria-label="Project details">
+
+    <div class="glass college-block reveal" style="--d:.1s">
+      <span class="eyebrow">Bachelor of Technology</span>
+      <h2 class="college-name">Raghu Engineering College (A)</h2>
+      <p class="college-place"><i class="fa-solid fa-location-dot"></i> Visakhapatnam</p>
+    </div>
+
+    <div class="glass project-block reveal" style="--d:.35s">
+      <span class="eyebrow">Mini Project</span>
+      <h1 class="project-title">SMART CAMPUS 360</h1>
+      <p class="project-sub">A Web-Based Smart Campus Mini Project</p>
+      <div class="project-tags">
+        <span class="tag"><i class="fa-solid fa-people-group"></i> Presented By: Team-3</span>
+        <span class="tag"><i class="fa-solid fa-microchip"></i> CSE AI-ML</span>
+        <span class="tag"><i class="fa-solid fa-chalkboard-user"></i> Guided By: K. Sandeep Kumar</span>
+      </div>
+    </div>
+
+    <div class="people-row">
+      <div class="glass person-card reveal" style="--d:.6s">
+        <span class="role-label"><i class="fa-solid fa-user-tie"></i> Head of Department</span>
+        <strong>Dr. G. Sridevi</strong>
+      </div>
+      <div class="glass person-card reveal" style="--d:.75s">
+        <span class="role-label"><i class="fa-solid fa-compass"></i> Project Guide</span>
+        <strong>K. Sandeep Kumar</strong>
+        <small>Assistant Professor</small>
+      </div>
+    </div>
+
+    <div class="glass team-block reveal" style="--d:.9s">
+      <span class="role-label"><i class="fa-solid fa-users"></i> Team Members</span>
+      <ul class="team-list">
+        <li style="--i:0"><span class="member-name">SAMPATHIRAO PREMSAI <em class="lead-badge">TL</em></span><span class="member-id">24981A420B</span></li>
+        <li style="--i:1"><span class="member-name">JEERU JANSHI</span><span class="member-id">24981A4213</span></li>
+        <li style="--i:2"><span class="member-name">KORIBILLI PRIYANKA</span><span class="member-id">24981A4221</span></li>
+        <li style="--i:3"><span class="member-name">CHALLA DARSHAK</span><span class="member-id">24981A424C</span></li>
+        <li style="--i:4"><span class="member-name">PAMIDI HEMASUNDHAR</span><span class="member-id">24981A425M</span></li>
+      </ul>
+    </div>
+
+  </aside>
 </div>
 
 <!-- Main app (shown after login) -->
@@ -253,7 +309,7 @@
         <div class="map-card">
           <h3>Master Plan</h3>
           <div class="map-img-wrap">
-            <img src="master-plan.jpg" alt="Campus Master Plan" loading="lazy">
+            <img src="master plan.jpg" alt="Campus Master Plan" loading="lazy">
           </div>
         </div>
       </div>
@@ -348,6 +404,22 @@
     </section>
 
   </main>
+</div>
+
+<!-- Abstract popup -->
+<div id="abstractModal" class="modal-overlay hidden">
+  <div class="modal-box abstract-box" role="dialog" aria-modal="true" aria-labelledby="abstractTitle">
+    <button class="modal-close" id="abstractCloseBtn" aria-label="Close">&times;</button>
+    <div class="modal-icon"><i class="fa-solid fa-file-lines"></i></div>
+    <h3 id="abstractTitle">ABSTRACT</h3>
+    <div class="abstract-text">
+      <p>Smart Campus 360 is a web-based student campus management platform designed to provide a centralized, efficient, and user-friendly digital environment for managing essential academic and campus-related activities. The project addresses the inconvenience of accessing information from multiple disconnected sources by bringing important student services together within a single platform. The system provides modules for student login and profile management, attendance tracking, timetable management, assignment monitoring, campus notices, campus mapping, bus routes, scholarships, and placement preparation.</p>
+      <p>The application is developed using HTML, CSS, and JavaScript, with a responsive interface designed to provide a consistent experience across desktop and mobile screen sizes. The system uses browser-based local storage to maintain student profile information, attendance records, timetable preferences, assignments, notices, registrations, and placement-related data. The dashboard provides an organized overview of important academic information, including overall attendance, pending assignments, upcoming classes, and recent notices. Subject-wise attendance monitoring allows students to identify their academic status, while the timetable module provides section-specific weekly schedules. Additional modules enable students to explore campus information through college and master-plan images, search bus routes, review scholarship opportunities, and monitor placement preparation skills and events.</p>
+      <p>The proposed system demonstrates how a centralized digital platform can improve the accessibility, organization, and management of routine student information. By integrating academic tracking, campus services, financial-support information, and career-oriented resources into one interface, Smart Campus 360 provides a practical foundation for a digitally connected campus environment.</p>
+      <p>The project can be further enhanced in the future by integrating a backend database, real-time college notifications, cloud authentication, automated attendance synchronization, online assignment submission, and personalized analytics.</p>
+    </div>
+    <button class="btn btn-primary btn-block" id="abstractOkBtn">Close</button>
+  </div>
 </div>
 
 <!-- Shared modal -->
