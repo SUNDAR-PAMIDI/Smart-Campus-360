@@ -181,6 +181,83 @@ const PLACEMENT_DRIVES = [
   { company: "Amazon", role: "SDE Intern", eligibility: "CGPA 8.0+, Strong DSA skills", status: "Upcoming" }
 ];
 
+/* ---------- Splash screen (logo + typed college name) ---------- */
+
+const SPLASH_TEXT = "Raghu Engineering College";
+const SPLASH_START_DELAY = 1000; // ms, lets the logo animate in first
+const SPLASH_LETTER_DELAY = 110; // ms per letter
+const SPLASH_HOLD = 900;         // ms to pause after the full name is shown
+
+function finishSplash() {
+  const splash = $("#splashScreen");
+  $("#splashCaret").classList.add("done");
+
+  setTimeout(function () {
+    // Show the login page underneath while the splash fades out
+    show($("#authScreen"));
+    showLoginForm();
+    splash.classList.add("fade-out");
+
+    setTimeout(function () {
+      hide(splash);
+      splash.classList.remove("fade-out");
+    }, 750);
+  }, SPLASH_HOLD);
+}
+
+function runSplash() {
+  const textEl = $("#splashText");
+  const reduceMotion = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  show($("#splashScreen"));
+  hide($("#authScreen"));
+  hide($("#appRoot"));
+  textEl.textContent = "";
+
+  if (reduceMotion) {
+    textEl.textContent = SPLASH_TEXT;
+    finishSplash();
+    return;
+  }
+
+  let index = 0;
+  setTimeout(function () {
+    const timer = setInterval(function () {
+      index++;
+      textEl.textContent = SPLASH_TEXT.slice(0, index);
+      if (index >= SPLASH_TEXT.length) {
+        clearInterval(timer);
+        finishSplash();
+      }
+    }, SPLASH_LETTER_DELAY);
+  }, SPLASH_START_DELAY);
+}
+
+// If logo.jpg is missing, show a graduation-cap icon instead
+function initLogoFallbacks() {
+  $all(".logo-img").forEach(function (img) {
+    img.addEventListener("error", function () {
+      hide(img);
+      const fallback = img.parentElement.querySelector(".logo-fallback");
+      if (fallback) show(fallback);
+    });
+  });
+}
+
+// Show / hide password buttons
+function initPasswordToggles() {
+  $all(".toggle-pass").forEach(function (btn) {
+    btn.addEventListener("click", function () {
+      const input = $("#" + btn.dataset.target);
+      if (!input) return;
+      const nowVisible = input.type === "password";
+      input.type = nowVisible ? "text" : "password";
+      btn.innerHTML = `<i class="fa-solid ${nowVisible ? "fa-eye-slash" : "fa-eye"}"></i>`;
+      btn.setAttribute("aria-label", nowVisible ? "Hide password" : "Show password");
+    });
+  });
+}
+
 /* ---------- Auth ---------- */
 
 function showLoginForm() {
@@ -277,6 +354,7 @@ function handleLogin(e) {
 function handleLogout() {
   clearCurrentUser();
   hide($("#appRoot"));
+  hide($("#splashScreen"));
   show($("#authScreen"));
   showLoginForm();
   closeNavDrawer();
@@ -826,6 +904,7 @@ function enterApp() {
     saveProfile(email, profile);
   }
 
+  hide($("#splashScreen"));
   hide($("#authScreen"));
   show($("#appRoot"));
 
@@ -927,15 +1006,17 @@ function initEventListeners() {
 function initApp() {
   initEventListeners();
   initMapImageFallbacks();
+  initLogoFallbacks();
+  initPasswordToggles();
 
   const email = getCurrentUser();
   if (email && getAccount(email)) {
+    // Already logged in: skip the splash and go straight to the dashboard
     enterApp();
   } else {
     clearCurrentUser();
-    show($("#authScreen"));
-    hide($("#appRoot"));
     showLoginForm();
+    runSplash(); // splash first, then the login page
   }
 }
 

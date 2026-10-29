@@ -12,8 +12,26 @@
 </head>
 <body>
 
-<!-- Login / Create account -->
-<div id="authScreen" class="auth-screen">
+<!-- Splash: logo in a circle + college name typed letter by letter -->
+<div id="splashScreen" class="splash" aria-label="Raghu Engineering College">
+  <span class="auth-orb orb-1" aria-hidden="true"></span>
+  <span class="auth-orb orb-2" aria-hidden="true"></span>
+  <span class="auth-orb orb-3" aria-hidden="true"></span>
+
+  <div class="splash-logo-wrap">
+    <span class="splash-ring ring-1" aria-hidden="true"></span>
+    <span class="splash-ring ring-2" aria-hidden="true"></span>
+    <div class="splash-logo">
+      <img class="logo-img" src="logo.jpg" alt="Raghu Engineering College logo">
+      <div class="logo-fallback hidden"><i class="fa-solid fa-graduation-cap"></i></div>
+    </div>
+  </div>
+
+  <h2 class="splash-title"><span id="splashText"></span><span class="caret" id="splashCaret" aria-hidden="true"></span></h2>
+</div>
+
+<!-- Login / Create account (shown after the splash finishes) -->
+<div id="authScreen" class="auth-screen hidden">
 
   <!-- floating background glows (decoration only) -->
   <span class="auth-orb orb-1" aria-hidden="true"></span>
@@ -23,20 +41,30 @@
   <!-- LEFT: login / signup -->
   <div class="auth-card">
     <div class="auth-brand">
-      <i class="fa-solid fa-graduation-cap"></i>
+      <div class="brand-logo">
+        <img class="logo-img" src="logo.jpg" alt="Raghu Engineering College logo">
+        <div class="logo-fallback hidden"><i class="fa-solid fa-graduation-cap"></i></div>
+      </div>
       <h1>SMART CAMPUS 360</h1>
       <p>Raghu Engineering College, Visakhapatnam</p>
     </div>
 
     <form id="loginForm" class="auth-form" novalidate>
-      <h2>Login</h2>
+      <h2>Welcome Back</h2>
       <div class="form-group">
         <label for="loginEmail">Email</label>
-        <input type="email" id="loginEmail" placeholder="you@example.com" required autocomplete="email">
+        <div class="input-wrap">
+          <i class="fa-solid fa-envelope field-icon"></i>
+          <input type="email" id="loginEmail" placeholder="you@example.com" required autocomplete="email">
+        </div>
       </div>
       <div class="form-group">
         <label for="loginPassword">Password</label>
-        <input type="password" id="loginPassword" placeholder="Enter password" required autocomplete="current-password">
+        <div class="input-wrap has-toggle">
+          <i class="fa-solid fa-lock field-icon"></i>
+          <input type="password" id="loginPassword" placeholder="Enter password" required autocomplete="current-password">
+          <button type="button" class="toggle-pass" data-target="loginPassword" aria-label="Show password"><i class="fa-solid fa-eye"></i></button>
+        </div>
       </div>
       <p class="form-error" id="loginError" aria-live="polite"></p>
       <button type="submit" class="btn btn-primary btn-block">
@@ -46,45 +74,77 @@
         Don't have an account?
         <button type="button" class="link-btn" id="showSignupBtn">Create Account</button>
       </p>
-      <p class="auth-note"><i class="fa-solid fa-circle-info"></i> Demo authentication — each account's data is stored only in your browser's local storage, separately per email.</p>
-      <button type="button" class="btn btn-outline btn-block abstract-btn" id="abstractBtn">
-        <i class="fa-solid fa-file-lines"></i> Abstract
+
+      <div class="auth-divider"><span>About the project</span></div>
+      <button type="button" class="btn btn-block abstract-btn" id="abstractBtn">
+        <i class="fa-solid fa-file-lines"></i> Read Project Abstract
       </button>
+      <p class="auth-note"><i class="fa-solid fa-circle-info"></i> Demo authentication — each account's data is stored only in your browser's local storage.</p>
     </form>
 
     <form id="signupForm" class="auth-form hidden" novalidate>
       <h2>Create Account</h2>
       <div class="form-group">
         <label for="signupName">Full Name</label>
-        <input type="text" id="signupName" placeholder="Your full name" required autocomplete="name">
+        <div class="input-wrap">
+          <i class="fa-solid fa-user field-icon"></i>
+          <input type="text" id="signupName" placeholder="Your full name" required autocomplete="name">
+        </div>
       </div>
       <div class="form-group">
         <label for="signupEmail">Email</label>
-        <input type="email" id="signupEmail" placeholder="you@example.com" required autocomplete="email">
+        <div class="input-wrap">
+          <i class="fa-solid fa-envelope field-icon"></i>
+          <input type="email" id="signupEmail" placeholder="you@example.com" required autocomplete="email">
+        </div>
       </div>
-      <div class="form-group">
-        <label for="signupStudentId">Student ID</label>
-        <input type="text" id="signupStudentId" placeholder="e.g. 22B91A4201" required>
+      <div class="form-row">
+        <div class="form-group">
+          <label for="signupStudentId">Student ID</label>
+          <div class="input-wrap">
+            <i class="fa-solid fa-id-card field-icon"></i>
+            <input type="text" id="signupStudentId" placeholder="22B91A4201" required>
+          </div>
+        </div>
+        <div class="form-group">
+          <label for="signupYear">Year (optional)</label>
+          <div class="input-wrap">
+            <i class="fa-solid fa-calendar field-icon"></i>
+            <input type="text" id="signupYear" placeholder="3rd Year">
+          </div>
+        </div>
       </div>
-      <div class="form-group">
-        <label for="signupBranch">Branch (optional)</label>
-        <input type="text" id="signupBranch" placeholder="e.g. CSE (AI & ML)">
+      <div class="form-row">
+        <div class="form-group">
+          <label for="signupBranch">Branch (optional)</label>
+          <div class="input-wrap">
+            <i class="fa-solid fa-code-branch field-icon"></i>
+            <input type="text" id="signupBranch" placeholder="CSE (AI & ML)">
+          </div>
+        </div>
+        <div class="form-group">
+          <label for="signupCgpa">CGPA (optional)</label>
+          <div class="input-wrap">
+            <i class="fa-solid fa-chart-line field-icon"></i>
+            <input type="text" id="signupCgpa" placeholder="e.g. 8.2">
+          </div>
+        </div>
       </div>
-      <div class="form-group">
-        <label for="signupYear">Year (optional)</label>
-        <input type="text" id="signupYear" placeholder="e.g. 3rd Year">
-      </div>
-      <div class="form-group">
-        <label for="signupCgpa">CGPA (optional)</label>
-        <input type="text" id="signupCgpa" placeholder="e.g. 8.2">
-      </div>
-      <div class="form-group">
-        <label for="signupPassword">Password</label>
-        <input type="password" id="signupPassword" placeholder="Create password" required autocomplete="new-password">
-      </div>
-      <div class="form-group">
-        <label for="signupConfirmPassword">Confirm Password</label>
-        <input type="password" id="signupConfirmPassword" placeholder="Confirm password" required autocomplete="new-password">
+      <div class="form-row">
+        <div class="form-group">
+          <label for="signupPassword">Password</label>
+          <div class="input-wrap">
+            <i class="fa-solid fa-lock field-icon"></i>
+            <input type="password" id="signupPassword" placeholder="Password" required autocomplete="new-password">
+          </div>
+        </div>
+        <div class="form-group">
+          <label for="signupConfirmPassword">Confirm Password</label>
+          <div class="input-wrap">
+            <i class="fa-solid fa-lock field-icon"></i>
+            <input type="password" id="signupConfirmPassword" placeholder="Confirm" required autocomplete="new-password">
+          </div>
+        </div>
       </div>
       <p class="form-error" id="signupError" aria-live="polite"></p>
       <button type="submit" class="btn btn-primary btn-block">
@@ -97,39 +157,32 @@
     </form>
   </div>
 
-  <!-- RIGHT: project details (text only, animated, transparent) -->
+  <!-- RIGHT: project details (same height as the form card) -->
   <aside class="info-panel" aria-label="Project details">
 
-    <div class="glass college-block reveal" style="--d:.1s">
-      <span class="eyebrow">Bachelor of Technology</span>
-      <h2 class="college-name">Raghu Engineering College (A)</h2>
-      <p class="college-place"><i class="fa-solid fa-location-dot"></i> Visakhapatnam</p>
-    </div>
-
-    <div class="glass project-block reveal" style="--d:.35s">
+    <div class="glass project-block reveal" style="--d:.15s">
       <span class="eyebrow">Mini Project</span>
       <h1 class="project-title">SMART CAMPUS 360</h1>
       <p class="project-sub">A Web-Based Smart Campus Mini Project</p>
       <div class="project-tags">
         <span class="tag"><i class="fa-solid fa-people-group"></i> Presented By: Team-3</span>
         <span class="tag"><i class="fa-solid fa-microchip"></i> CSE AI-ML</span>
-        <span class="tag"><i class="fa-solid fa-chalkboard-user"></i> Guided By: K. Sandeep Kumar</span>
       </div>
     </div>
 
     <div class="people-row">
-      <div class="glass person-card reveal" style="--d:.6s">
+      <div class="glass person-card reveal" style="--d:.35s">
         <span class="role-label"><i class="fa-solid fa-user-tie"></i> Head of Department</span>
         <strong>Dr. G. Sridevi</strong>
       </div>
-      <div class="glass person-card reveal" style="--d:.75s">
+      <div class="glass person-card reveal" style="--d:.5s">
         <span class="role-label"><i class="fa-solid fa-compass"></i> Project Guide</span>
         <strong>K. Sandeep Kumar</strong>
         <small>Assistant Professor</small>
       </div>
     </div>
 
-    <div class="glass team-block reveal" style="--d:.9s">
+    <div class="glass team-block reveal" style="--d:.65s">
       <span class="role-label"><i class="fa-solid fa-users"></i> Team Members</span>
       <ul class="team-list">
         <li style="--i:0"><span class="member-name">SAMPATHIRAO PREMSAI <em class="lead-badge">TL</em></span><span class="member-id">24981A420B</span></li>
